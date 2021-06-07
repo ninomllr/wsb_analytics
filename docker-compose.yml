@@ -1,0 +1,249 @@
+version: '3.7'
+
+volumes:
+  metadata_data: {}
+  middle_var: {}
+  historical_var: {}
+  broker_var: {}
+  coordinator_var: {}
+  router_var: {}
+
+services:
+  postgres: # postgres for druid
+    container_name: postgres
+    image: postgres:latest
+    volumes:
+      - metadata_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=FoolishPassword
+      - POSTGRES_USER=druid
+      - POSTGRES_DB=druid
+    networks:
+      - docker_example_network
+
+  # Need 3.5 or later for container nodes
+  zookeeper:
+    container_name: zookeeper
+    image: zookeeper:3.5
+    environment:
+      - ZOO_MY_ID=1
+    networks:
+      - docker_example_network
+
+  coordinator:
+    image: apache/druid:0.21.1-rc2
+    container_name: coordinator
+    volumes:
+      - ./storage:/opt/data
+      - coordinator_var:/opt/druid/var
+    depends_on:
+      - zookeeper
+      - postgres
+    ports:
+      - '8081:8081'
+    command:
+      - coordinator
+    env_file:
+      - environment
+    networks:
+      - docker_example_network
+
+  broker:
+    image: apache/druid:0.21.1-rc2
+    container_name: broker
+    volumes:
+      - broker_var:/opt/druid/var
+    depends_on:
+      - zookeeper
+      - postgres
+      - coordinator
+    ports:
+      - '8082:8082'
+    command:
+      - broker
+    env_file:
+      - environment
+    networks:
+      - docker_example_network
+
+  historical:
+    image: apache/druid:0.21.1-rc2
+    container_name: historical
+    volumes:
+      - ./storage:/opt/data
+      - historical_var:/opt/druid/var
+    depends_on:
+      - zookeeper
+      - postgres
+      - coordinator
+    ports:
+      - '8083:8083'
+    command:
+      - historical
+    env_file:
+      - environment
+    networks:
+      - docker_example_network
+
+  middlemanager:
+    image: apache/druid:0.21.1-rc2
+    container_name: middlemanager
+    volumes:
+      - ./storage:/opt/data
+      - middle_var:/opt/druid/var
+    depends_on:
+      - zookeeper
+      - postgres
+      - coordinator
+    ports:
+      - '8091:8091'
+    command:
+      - middleManager
+    env_file:
+      - environment
+    networks:
+      - docker_example_network
+
+  router:
+    image: apache/druid:0.21.1-rc2
+    container_name: router
+    volumes:
+      - router_var:/opt/druid/var
+    depends_on:
+      - zookeeper
+      - postgres
+      - coordinator
+    ports:
+      - '8888:8888'
+    command:
+      - router
+    env_file:
+      - environment
+    networks:
+      - docker_example_network
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile_jupyter
+    container_name: project_aikg_jupyter
+    user: '${UID}:${GID}'
+    volumes:
+      - ./notebooks:/home/jovyan/notebooks
+      - ./.env:/home/jovyan/.env
+    ports:
+      - '8889:8888'
+      - '4040-4050:4040-4050'
+    env_file:
+      - .env
+    networks:
+      - docker_example_network
+
+  minio_dagster:
+    hostname: minio
+    image: minio/minio
+    container_name: minio_dagster
+    user: '1000:1000'
+    volumes:
+      - './storage/s3:/data'
+    ports:
+      - '9000:9000'
+    env_file:
+      - .env
+    entrypoint:
+      - minio
+      - server
+      - /data
+    networks:
+      - docker_example_network
+
+  # This service runs the postgres DB used by dagster for run storage, schedule storage,
+  # and event log storage.
+  docker_example_postgresql:
+    image: postgres:11
+    container_name: docker_example_postgresql
+    environment:
+      POSTGRES_USER: 'postgres_user'
+      POSTGRES_PASSWORD: 'postgres_password'
+      POSTGRES_DB: 'postgres_db'
+    networks:
+      - docker_example_network
+
+  # This service runs the gRPC server that loads and executes your pipelines, in both dagit
+  # and dagster-daemon. By setting DAGSTER_CURRENT_IMAGE to its own image, we tell the
+  # run launcher to use this same image when launching runs in a new container as well.
+  # Multiple containers like this can be deployed separately - each just needs to run on
+  # its own port, and have its own entry in the workspace.yaml file that's loaded by dagit.
+  docker_example_pipelines:
+    build:
+      context: .
+      dockerfile: ./Dockerfile_pipelines
+    container_name: docker_example_pipelines
+    image: docker_example_pipelines_image
+    environment:
+      DAGSTER_POSTGRES_USER: 'postgres_user'
+      DAGSTER_POSTGRES_PASSWORD: 'postgres_password'
+      DAGSTER_POSTGRES_DB: 'postgres_db'
+      DAGSTER_CURRENT_IMAGE: 'docker_example_pipelines_image'
+    networks:
+      - docker_example_network
+
+  # This service runs dagit, which loads the pipelines from the user code container.
+  # Since our instance uses the QueuedRunCoordinator, any runs submitted from dagit will be put on
+  # a queue and later dequeued and launched by dagster-daemon.
+  docker_example_dagit:
+    build:
+      context: .
+      dockerfile: ./Dockerfile_dagster
+    entrypoint:
+      - dagit
+      - -h
+      - '0.0.0.0'
+      - -p
+      - '3000'
+      - -w
+      - workspace.yaml
+    container_name: docker_example_dagit
+    expose:
+      - '3000'
+    ports:
+      - '3000:3000'
+    environment:
+      DAGSTER_POSTGRES_USER: 'postgres_user'
+      DAGSTER_POSTGRES_PASSWORD: 'postgres_password'
+      DAGSTER_POSTGRES_DB: 'postgres_db'
+    volumes: # Make docker client accessible so we can terminate containers from dagit
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - docker_example_network
+    depends_on:
+      - docker_example_postgresql
+      - docker_example_pipelines
+
+  # This service runs the dagster-daemon process, which is responsible for taking runs
+  # off of the queue and launching them, as well as creating runs from schedules or sensors.
+  docker_example_daemon:
+    build:
+      context: .
+      dockerfile: ./Dockerfile_dagster
+    entrypoint:
+      - dagster-daemon
+      - run
+    container_name: docker_example_daemon
+    restart: on-failure
+    environment:
+      DAGSTER_POSTGRES_USER: 'postgres_user'
+      DAGSTER_POSTGRES_PASSWORD: 'postgres_password'
+      DAGSTER_POSTGRES_DB: 'postgres_db'
+    volumes: # Make docker client accessible so we can launch containers using host docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - docker_example_network
+    depends_on:
+      - docker_example_postgresql
+      - docker_example_pipelines
+
+networks:
+  docker_example_network:
+    driver: bridge
+    name: docker_example_network
