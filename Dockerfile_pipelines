@@ -22,6 +22,9 @@ COPY dagster_home/dagster.yaml $DAGSTER_HOME
 WORKDIR /opt/dagster/app
 
 COPY dagster_home/repo.py /opt/dagster/app
+COPY dagster_home/common /opt/dagster/app/common
+COPY dagster_home/environments /opt/dagster/app/environments
+
 
 # Run dagster gRPC server on port 4000
 

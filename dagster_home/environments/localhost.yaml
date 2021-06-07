@@ -1,0 +1,7 @@
+resources:
+  boto3:
+    config:
+      aws_access_key_id: AKIAWSB
+      aws_secret_access_key: WSBSECRETKEY
+      endpoint_url: http://minio:9000
+      region_key: us-east-1

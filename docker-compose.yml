@@ -9,135 +9,135 @@ volumes:
   router_var: {}
 
 services:
-  postgres: # postgres for druid
-    container_name: postgres
-    image: postgres:latest
-    volumes:
-      - metadata_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD=FoolishPassword
-      - POSTGRES_USER=druid
-      - POSTGRES_DB=druid
-    networks:
-      - docker_example_network
+  # postgres: # postgres for druid
+  #   container_name: postgres
+  #   image: postgres:latest
+  #   volumes:
+  #     - metadata_data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_PASSWORD=FoolishPassword
+  #     - POSTGRES_USER=druid
+  #     - POSTGRES_DB=druid
+  #   networks:
+  #     - docker_example_network
 
-  # Need 3.5 or later for container nodes
-  zookeeper:
-    container_name: zookeeper
-    image: zookeeper:3.5
-    environment:
-      - ZOO_MY_ID=1
-    networks:
-      - docker_example_network
+  # # Need 3.5 or later for container nodes
+  # zookeeper:
+  #   container_name: zookeeper
+  #   image: zookeeper:3.5
+  #   environment:
+  #     - ZOO_MY_ID=1
+  #   networks:
+  #     - docker_example_network
 
-  coordinator:
-    image: apache/druid:0.21.1-rc2
-    container_name: coordinator
-    volumes:
-      - ./storage:/opt/data
-      - coordinator_var:/opt/druid/var
-    depends_on:
-      - zookeeper
-      - postgres
-    ports:
-      - '8081:8081'
-    command:
-      - coordinator
-    env_file:
-      - environment
-    networks:
-      - docker_example_network
+  # coordinator:
+  #   image: apache/druid:0.21.1-rc2
+  #   container_name: coordinator
+  #   volumes:
+  #     - ./storage:/opt/data
+  #     - coordinator_var:/opt/druid/var
+  #   depends_on:
+  #     - zookeeper
+  #     - postgres
+  #   ports:
+  #     - '8081:8081'
+  #   command:
+  #     - coordinator
+  #   env_file:
+  #     - environment
+  #   networks:
+  #     - docker_example_network
 
-  broker:
-    image: apache/druid:0.21.1-rc2
-    container_name: broker
-    volumes:
-      - broker_var:/opt/druid/var
-    depends_on:
-      - zookeeper
-      - postgres
-      - coordinator
-    ports:
-      - '8082:8082'
-    command:
-      - broker
-    env_file:
-      - environment
-    networks:
-      - docker_example_network
+  # broker:
+  #   image: apache/druid:0.21.1-rc2
+  #   container_name: broker
+  #   volumes:
+  #     - broker_var:/opt/druid/var
+  #   depends_on:
+  #     - zookeeper
+  #     - postgres
+  #     - coordinator
+  #   ports:
+  #     - '8082:8082'
+  #   command:
+  #     - broker
+  #   env_file:
+  #     - environment
+  #   networks:
+  #     - docker_example_network
 
-  historical:
-    image: apache/druid:0.21.1-rc2
-    container_name: historical
-    volumes:
-      - ./storage:/opt/data
-      - historical_var:/opt/druid/var
-    depends_on:
-      - zookeeper
-      - postgres
-      - coordinator
-    ports:
-      - '8083:8083'
-    command:
-      - historical
-    env_file:
-      - environment
-    networks:
-      - docker_example_network
+  # historical:
+  #   image: apache/druid:0.21.1-rc2
+  #   container_name: historical
+  #   volumes:
+  #     - ./storage:/opt/data
+  #     - historical_var:/opt/druid/var
+  #   depends_on:
+  #     - zookeeper
+  #     - postgres
+  #     - coordinator
+  #   ports:
+  #     - '8083:8083'
+  #   command:
+  #     - historical
+  #   env_file:
+  #     - environment
+  #   networks:
+  #     - docker_example_network
 
-  middlemanager:
-    image: apache/druid:0.21.1-rc2
-    container_name: middlemanager
-    volumes:
-      - ./storage:/opt/data
-      - middle_var:/opt/druid/var
-    depends_on:
-      - zookeeper
-      - postgres
-      - coordinator
-    ports:
-      - '8091:8091'
-    command:
-      - middleManager
-    env_file:
-      - environment
-    networks:
-      - docker_example_network
+  # middlemanager:
+  #   image: apache/druid:0.21.1-rc2
+  #   container_name: middlemanager
+  #   volumes:
+  #     - ./storage:/opt/data
+  #     - middle_var:/opt/druid/var
+  #   depends_on:
+  #     - zookeeper
+  #     - postgres
+  #     - coordinator
+  #   ports:
+  #     - '8091:8091'
+  #   command:
+  #     - middleManager
+  #   env_file:
+  #     - environment
+  #   networks:
+  #     - docker_example_network
 
-  router:
-    image: apache/druid:0.21.1-rc2
-    container_name: router
-    volumes:
-      - router_var:/opt/druid/var
-    depends_on:
-      - zookeeper
-      - postgres
-      - coordinator
-    ports:
-      - '8888:8888'
-    command:
-      - router
-    env_file:
-      - environment
-    networks:
-      - docker_example_network
+  # router:
+  #   image: apache/druid:0.21.1-rc2
+  #   container_name: router
+  #   volumes:
+  #     - router_var:/opt/druid/var
+  #   depends_on:
+  #     - zookeeper
+  #     - postgres
+  #     - coordinator
+  #   ports:
+  #     - '8888:8888'
+  #   command:
+  #     - router
+  #   env_file:
+  #     - environment
+  #   networks:
+  #     - docker_example_network
 
-  jupyter:
-    build:
-      context: .
-      dockerfile: Dockerfile_jupyter
-    container_name: project_aikg_jupyter
-    user: '${UID}:${GID}'
-    volumes:
-      - ./notebooks:/home/jovyan/notebooks
-      - ./.env:/home/jovyan/.env
-    ports:
-      - '8889:8888'
-      - '4040-4050:4040-4050'
-    env_file:
-      - .env
-    networks:
-      - docker_example_network
+  # jupyter:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile_jupyter
+  #   container_name: project_aikg_jupyter
+  #   user: '${UID}:${GID}'
+  #   volumes:
+  #     - ./notebooks:/home/jovyan/notebooks
+  #     - ./.env:/home/jovyan/.env
+  #   ports:
+  #     - '8889:8888'
+  #     - '4040-4050:4040-4050'
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - docker_example_network
 
   minio_dagster:
     hostname: minio
