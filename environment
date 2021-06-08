@@ -24,9 +24,29 @@ DRUID_MAXNEWSIZE=250m
 DRUID_NEWSIZE=250m
 DRUID_MAXDIRECTMEMORYSIZE=6172m
 
+# Configure MINIO S3 connection
+S3_ACCESS_KEY=AKIAWSB
+S3_SECRET_KEY=WSBSECRETKEY
+AWS_REGION=us-east-1
+S3_STORAGE_BUKCET=lake
+S3_STORAGE_BUCKET=lake
+S3_STORAGE_BASE_KEY=segments
+
+# For S3:
+druid_storage_type=s3
+druid_storage_bucket=${S3_STORAGE_BUKCET}
+druid_storage_baseKey=${S3_STORAGE_BASE_KEY}
+druid_s3_accessKey=${S3_ACCESS_KEY}
+druid_s3_secretKey=${S3_SECRET_KEY}
+### For s3 minio, don't forget to delete it when working on aws s3
+druid_s3_enablePathStyleAccess=true
+druid_s3_endpoint_url=http://minio:9000
+druid_s3_endpoint_signingRegion=us-east-1
+###
+
 druid_emitter_logging_logLevel=debug
 
-druid_extensions_loadList=["druid-histogram", "druid-datasketches", "druid-lookups-cached-global", "postgresql-metadata-storage"]
+druid_extensions_loadList=["druid-histogram", "druid-datasketches", "druid-lookups-cached-global", "postgresql-metadata-storage", "druid-s3-extensions"]
 
 druid_zk_service_host=zookeeper
 
@@ -38,7 +58,7 @@ druid_metadata_storage_connector_password=FoolishPassword
 
 druid_coordinator_balancer_strategy=cachingCost
 
-druid_indexer_runner_javaOptsArray=["-server", "-Xmx1g", "-Xms1g", "-XX:MaxDirectMemorySize=3g", "-Duser.timezone=UTC", "-Dfile.encoding=UTF-8", "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"]
+druid_indexer_runner_javaOptsArray=["-server", "-Xmx1g", "-Xms1g", "-XX:MaxDirectMemorySize=3g", "-Duser.timezone=UTC", "-Dfile.encoding=UTF-8", "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager", "-Daws.region=us-east-1"]
 druid_indexer_fork_property_druid_processing_buffer_sizeBytes=268435456
 
 druid_storage_type=local

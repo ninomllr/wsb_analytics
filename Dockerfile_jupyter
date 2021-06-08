@@ -1,3 +1,5 @@
 FROM jupyter/all-spark-notebook:latest
 
-RUN pip install boto3
+RUN pip install boto3 pydruid
+
+ENTRYPOINT start-notebook.sh --NotebookApp.password='sha1:74ba40f8a388:c913541b7ee99d15d5ed31d4226bf7838f83a50e'

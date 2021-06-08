@@ -6,4 +6,4 @@ Tools used:
 - MINIO - S3 data lake - https://min.io
 - Delta Lake / Apache Spark - Add SQL functionality to s3
 - Jupyter - Notebooks and trying out stuff
-- Apache druid - Data storage
+- Apache druid - Analytics database

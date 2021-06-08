@@ -22,16 +22,8 @@ local_mode = ModeDefinition(
 @solid(required_resource_keys={'boto3'}, description='''Uploads file to s3 ''')
 def upload_s3(context, content):
     timestampStr = datetime.now().strftime("%Y%m%d%H%M%S")
-
-    # s3 = boto3.resource(
-    # 's3',
-    # region_name='us-east-1',
-    # endpoint_url='http://minio:9000/',
-    # aws_access_key_id="AKIAWSB",
-    # aws_secret_access_key="WSBSECRETKEY"
-    # )
     s3 = context.resources.boto3.get_client()
-    s3.Object('wallstreetbets', timestampStr+'.json').put(Body=content)
+    s3.Object('lake', 'wallstreetbets/'+timestampStr+'.json').put(Body=content)
 
 
 @solid
@@ -70,4 +62,3 @@ def my_wsb_load_schedule(_context):
 @repository
 def deploy_docker_repository():
     return [load_wsb, my_wsb_load_schedule]
-    # return [load_wsb]
