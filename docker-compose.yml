@@ -25,6 +25,8 @@ services:
     image: zookeeper:3.5
     environment:
       - ZOO_MY_ID=1
+    networks:
+      - docker_example_network
 
   coordinator:
     image: apache/druid:0.21.1-rc2
@@ -41,6 +43,8 @@ services:
       - coordinator
     env_file:
       - environment
+    networks:
+      - docker_example_network
 
   broker:
     image: apache/druid:0.21.1-rc2
@@ -57,6 +61,8 @@ services:
       - broker
     env_file:
       - environment
+    networks:
+      - docker_example_network
 
   historical:
     image: apache/druid:0.21.1-rc2
@@ -74,6 +80,8 @@ services:
       - historical
     env_file:
       - environment
+    networks:
+      - docker_example_network
 
   middlemanager:
     image: apache/druid:0.21.1-rc2
@@ -91,6 +99,8 @@ services:
       - middleManager
     env_file:
       - environment
+    networks:
+      - docker_example_network
 
   router:
     image: apache/druid:0.21.1-rc2
@@ -107,6 +117,8 @@ services:
       - router
     env_file:
       - environment
+    networks:
+      - docker_example_network
 
   jupyter:
     build:
@@ -122,6 +134,8 @@ services:
       - '4040-4050:4040-4050'
     env_file:
       - .env
+    networks:
+      - docker_example_network
 
   minio_dagster:
     hostname: minio
@@ -138,6 +152,8 @@ services:
       - minio
       - server
       - /data
+    networks:
+      - docker_example_network
 
   # This service runs the postgres DB used by dagster for run storage, schedule storage,
   # and event log storage.
@@ -148,6 +164,8 @@ services:
       POSTGRES_USER: 'postgres_user'
       POSTGRES_PASSWORD: 'postgres_password'
       POSTGRES_DB: 'postgres_db'
+    networks:
+      - docker_example_network
 
   # This service runs the gRPC server that loads and executes your pipelines, in both dagit
   # and dagster-daemon. By setting DAGSTER_CURRENT_IMAGE to its own image, we tell the
@@ -165,6 +183,8 @@ services:
       DAGSTER_POSTGRES_PASSWORD: 'postgres_password'
       DAGSTER_POSTGRES_DB: 'postgres_db'
       DAGSTER_CURRENT_IMAGE: 'docker_example_pipelines_image'
+    networks:
+      - docker_example_network
 
   # This service runs dagit, which loads the pipelines from the user code container.
   # Since our instance uses the QueuedRunCoordinator, any runs submitted from dagit will be put on
@@ -195,6 +215,8 @@ services:
     depends_on:
       - docker_example_postgresql
       - docker_example_pipelines
+    networks:
+      - docker_example_network
 
   # This service runs the dagster-daemon process, which is responsible for taking runs
   # off of the queue and launching them, as well as creating runs from schedules or sensors.
@@ -216,3 +238,10 @@ services:
     depends_on:
       - docker_example_postgresql
       - docker_example_pipelines
+    networks:
+      - docker_example_network
+
+networks:
+  docker_example_network:
+    driver: bridge
+    name: docker_example_network
